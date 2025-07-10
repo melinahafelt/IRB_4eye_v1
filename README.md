@@ -1,80 +1,79 @@
-# IRB Credit Risk Modeling – Synthetic PD & LGD Datasets
+# IRB Credit Risk Modeling – Synthetic PD and LGD Datasets
 
-This repository contains synthetic datasets and notebooks designed to simulate key concepts in IRB credit risk modeling, with a focus on:
+This repository provides synthetic datasets and notebooks designed to simulate key components of credit risk modeling under the Internal Ratings-Based (IRB) approach, with a primary focus on:
 
-- PD (Probability of Default)  
-- LGD (Loss Given Default)  
+- Probability of Default (PD)  
+- Loss Given Default (LGD)
 
-Both are central components in regulatory and internal risk quantification frameworks.
+Both are foundational inputs to regulatory capital calculations and internal risk management under Basel II/III and CRR frameworks.
 
-## 1. PD Modeling
+## 1. Probability of Default (PD) Modeling
 
-The PD dataset (`pd_dataset_easy.csv`) is snapshot-based, with one row per customer per year.  
-It is structured to support standard IRB-level PD model development and validation:
+The `pd_dataset_easy.csv` file is a snapshot-based dataset containing one observation per customer per year. It is structured to support standard PD modeling pipelines:
 
 - Feature engineering on customer-level attributes  
-- Default flag creation  
-- Statistical validation: monotonicity, binning, KS tests, and more  
+- Binary default flag creation  
+- Statistical validation techniques including monotonicity analysis, binning, and Kolmogorov–Smirnov tests
 
-See: `IRB_PD.ipynb`
+Notebook: `IRB_PD.ipynb`
 
-## 2. LGD Dataset: Event-Based Simulation
+## 2. Loss Given Default (LGD) – Event-Based Simulation
 
-The LGD dataset (`lgd_dataset.csv`) extends the PD concept with a more complex, event-based structure to reflect how LGD is modeled in production systems.
+The `lgd_dataset.csv` file extends the PD approach to a more complex, event-driven dataset that simulates real-world LGD modeling logic. It includes multiple observations per customer to reflect different stages of the credit lifecycle:
 
-Each customer may have multiple rows, representing key credit lifecycle events:
+- `event_type = "default"`: Indicates the year of default  
+- `event_type = "recovery"`: Represents recovery activity in subsequent years
 
-- `event_type = "default"` – the year default occurs  
-- `event_type = "recovery"` – the year recovery is recorded  
+This structure mimics actual LGD behavior, where recoveries may occur years after the initial default.
 
-This design reflects real-world LGD behavior, where recovery may occur one or more years after the initial default.
-
-## Added Columns to LGD 
+### Key Columns
 
 | Column             | Description                                                                 |
 |--------------------|-----------------------------------------------------------------------------|
-| `event_type`        | "default" or "recovery" per customer and year                              |
-| `recovered_amount`  | Amount recovered after default                                              |
-| `recovery_rate`     | Share of exposure recovered = `recovered_amount / exposure_at_default`     |
-| `lgd`               | Loss Given Default = `1 − recovery_rate`                                   |
-| `batch_run_date`    | Timestamp of batch generation; used to filter out outdated duplicate rows  |
-| `segment`           | Customer segment (e.g., "Corporate" or "Retail") added for LGD modeling to enable segmentation and enhanced analysis |
+| `event_type`       | "default" or "recovery" per customer and year                              |
+| `recovered_amount` | Amount recovered following default                                          |
+| `recovery_rate`    | Fraction of exposure recovered, calculated as `recovered_amount / exposure_at_default` |
+| `lgd`              | Loss Given Default, calculated as `1 − recovery_rate`                      |
+| `batch_run_date`   | Timestamp for batch control and duplicate filtering                        |
+| `segment`          | Customer segment (for example, "Corporate" or "Retail") for segmentation logic |
 
-## Data Complexity and Preprocessing
+## 3. Data Complexity and Preprocessing Requirements
 
-This LGD dataset includes realistic data issues commonly encountered in IRB modeling:
+The LGD dataset includes several realistic data imperfections commonly encountered in production environments:
 
-- Duplicate recovery entries for a customer  
-- Rows where `recovered_amount > exposure_at_default`, resulting in `lgd < 0`  
-- One row with missing recovery data  
-- Varying `batch_run_date` values across duplicate rows  
+- Duplicate recovery entries per customer  
+- Cases where recovered amount exceeds exposure at default, resulting in negative LGD  
+- Rows with missing recovery information  
+- Variability in batch run date for the same customer
 
-To simulate these conditions, the data must be sorted by `batch_run_date` and filtered to retain only the most recent entry per customer.  
-This mimics real-world LGD pipelines, where data often arrives in batches and may be revised over time.
+These conditions simulate typical data challenges in production LGD models. Cleaning steps may include:
 
-<font color="red">
-  
-## LGD vs. PD – Modeling Focus
+- Sorting by batch run date and retaining the most recent entries  
+- Filtering invalid recovery records  
+- Aggregating or analyzing by segment
 
-| Aspect               | PD Modeling                             | LGD Modeling                                         |
-|----------------------|------------------------------------------|------------------------------------------------------|
-| Structure            | Snapshot-based (one row per year)        | Event-based (multiple rows per customer)             |
-| Validation focus     | Statistical tests (KS, PSI, etc.)        | Data integrity and lifecycle handling                |
-| Common challenges    | Imbalanced data                          | Delayed recoveries, duplicates, missing values       |
-| Regulatory alignment | Basel-compliant scoring                  | Lifecycle LGD estimation and downturn adjustments    |
+## PD vs. LGD: Structural and Modeling Differences
 
-<p><b>Note:</b> Unlike LGD, PD modeling typically does not segment by customer type or other segments due to the large sample sizes and the focus on probability estimation. In contrast, LGD modeling often requires segmentation and more advanced data preprocessing (such as handling duplicates and batch filtering) because the dataset is smaller, event-based, and more complex. This ensures model stability and regulatory compliance without overwhelming the reader with excessive testing detail.</p>
+| Feature                | PD Modeling                               | LGD Modeling                                          |
+|------------------------|--------------------------------------------|--------------------------------------------------------|
+| Data Structure         | Snapshot-based (one row per year)         | Event-based (multiple events per customer)            |
+| Focus of Validation    | Statistical validation such as calibration and distribution tests | Data lifecycle integrity, segmentation, duplicate handling |
+| Common Challenges      | Class imbalance, rare events              | Delayed recoveries, duplicate rows, missing values     |
+| Segmentation Needs     | Often uniform across population           | Typically requires segmentation by business type       |
+| Regulatory Context     | Basel-compliant scoring models            | Lifecycle-based estimation with downturn adjustments   |
 
-</font>
+Note: LGD modeling generally involves smaller and more complex datasets than PD modeling. It often requires enhanced preprocessing logic and more careful segmentation. PD modeling typically benefits from large sample sizes and more straightforward binary classification techniques.
 
-## Purpose of this Project
+## 4. Purpose of the Project
 
-This repository demonstrates not only the technical implementation of IRB-aligned modeling logic, but also:
+This repository was created as a sandbox environment to demonstrate:
 
-- How PD and LGD differ structurally  
-- Why LGD often requires stricter data hygiene  
-- The role of fields like `batch_run_date` in production data pipelines  
-- How synthetic data can be designed to simulate real-world risk analytics workflows  
+- End-to-end IRB-compliant PD and LGD modeling workflows  
+- Structural differences between PD and LGD datasets  
+- Data preparation techniques used in real-world LGD pipelines  
+- How synthetic data can simulate production-grade modeling environments
 
-This is a sandbox project created for demonstration and job discussion purposes only.  
-No real customer data is used. All datasets are fully synthetic.
+## Disclaimer
+
+This project is entirely synthetic and created solely for demonstration, education, and professional discussion purposes.  
+No real customer data is used. All datasets are fully anonymized and artificial.
